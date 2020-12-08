@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using DataAccess.Options;
-using Models;
 
-namespace DataAccess
+namespace DataAccess.Loggers
 {
     internal class Logger : ILogger
     {

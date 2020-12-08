@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using DataAccess;
+using DataAccess.Loggers;
 using Models;
 
 namespace DataAccessLayer.Repositories

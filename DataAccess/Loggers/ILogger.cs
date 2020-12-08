@@ -1,4 +1,4 @@
-﻿namespace DataAccess
+﻿namespace DataAccess.Loggers
 {
     internal interface ILogger
     {

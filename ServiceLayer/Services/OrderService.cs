@@ -1,7 +1,9 @@
-﻿using Models;
+﻿using System;
+using Models;
 using DataAccessLayer.UnitOfWork;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using ServiceLayer.DTO;
 
 namespace ServiceLayer.Services
@@ -15,24 +17,29 @@ namespace ServiceLayer.Services
             Database = unitOfWork;
         }
 
-        private IEnumerable<Order> GetOrders() => Database.Orders.GetAll();
-        private Customer GetCustomer(int id) => Database.Customers.Get(id);
-        private Product GetProduct(int id) => Database.Products.Get(id);
-        public IEnumerable<OrderInfo> GetOrdersInfo()
+        private async Task<IEnumerable<Order>> GetOrders() => await Database.Orders.GetAll();
+        private async Task<Customer> GetCustomer(int id) => await Database.Customers.Get(id);
+        private async Task<Product> GetProduct(int id) => await Database.Products.Get(id);
+        public async Task<IEnumerable<OrderInfo>> GetOrdersInfo()
         {
-            var orders = GetOrders();
-            return (from order in orders
-                let customer = GetCustomer(order.CustomerID)
-                let product = GetProduct(order.ProductID)
-                select new OrderInfo()
-                {
-                    ProductName = product.Name,
-                    CustomerFirstName = customer.FirstName,
-                    CustomerLastName = customer.LastName,
-                    CustomerEmail = customer.EmailAddress,
-                    CustomerAddress = customer.City + customer.Address,
-                    CustomerPhone = customer.Phone,
-                });
+            return await Task.Run(async () =>
+            {
+                Func<Order, Task<Customer>> getCustomer = async (order) => await GetCustomer(order.CustomerID);
+                Func<Order, Task<Product>> getProduct = async (order) => await GetProduct(order.CustomerID);
+                var orders = await GetOrders();
+                return (from order in orders
+                    let customer = getCustomer.Invoke(order).Result
+                    let product = getProduct.Invoke(order).Result
+                    select new OrderInfo()
+                    {
+                        ProductName = product.Name,
+                        CustomerFirstName = customer.FirstName,
+                        CustomerLastName = customer.LastName,
+                        CustomerEmail = customer.EmailAddress,
+                        CustomerAddress = customer.City + customer.Address,
+                        CustomerPhone = customer.Phone,
+                    });
+            });
         }
     }
 }

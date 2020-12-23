@@ -2,6 +2,7 @@
 using System.IO;
 using System.ServiceProcess;
 using System.Threading;
+using System.Threading.Tasks;
 using FileManager.OptionModels;
 using ConfigurationManager;
 
@@ -56,45 +57,52 @@ namespace FileManager
         }
         private void OnCreated(object sender, FileSystemEventArgs e)
         {
-            //GC.Collect(2);
-            string pathInTargetDirectory = SendToTargetDirectory(e.FullPath);
-            var archivator = new Archivator();
-            archivator.UnZip(e.FullPath, pathInTargetDirectory);
+            ThreadPool.QueueUserWorkItem(async state =>
+            {
+                //GC.Collect(2);
+                string pathInTargetDirectory = await SendToTargetDirectory(e.FullPath);
+                var archivator = new Archivator();
+                archivator.UnZip(e.FullPath, pathInTargetDirectory);
+            });
         }
 
-        private static string SendToTargetDirectory(string oldPath)
+        private async Task<string> SendToTargetDirectory(string oldPath)
         {
-            try
+            return await Task.Run(() =>
             {
-                var file = File.ReadAllBytes(oldPath);
-
-                var encryption = new Encryption();
-                var cryptedFile = encryption.Crypt(file);
-
-                var archivator = new Archivator();
-                string newPath = encryption.GetCryptedFilePath(
-                    archivator.GetFilePathInTargetDirectoryByTime(new FileInfo(oldPath), true)) + ".gz";
-
-                string tempPath = Path.Combine(
-                    "C:\\Users\\quasar\\source\\repos\\Service1\\bin\\Debug\\",
-                    "temp123");
-
-                new FileStream(tempPath, FileMode.Create)
-                    .WriteTo(cryptedFile)
-                    .CompressFromFile(newPath)
-                    .Dispose();
-
-                return newPath;
-            }
-            catch (Exception e)
-            {
-                using (var writer = new StreamWriter(Options.PathOptions.Templog, true))
+                try
                 {
-                    writer.WriteLine(e.Message);
-                    writer.Flush();
+                    var file = File.ReadAllBytes(oldPath);
+
+                    var encryption = new Encryption();
+                    var cryptedFile = encryption.Crypt(file);
+
+                    var archivator = new Archivator();
+                    string newPath = encryption.GetCryptedFilePath(
+                        archivator.GetFilePathInTargetDirectoryByTime(new FileInfo(oldPath), true)) + ".gz";
+
+                    string tempPath = Path.Combine(
+                        "C:\\Users\\quasar\\source\\repos\\Service1\\bin\\Debug\\",
+                        "temp123");
+
+                    new FileStream(tempPath, FileMode.Create)
+                        .WriteTo(cryptedFile)
+                        .CompressFromFile(newPath)
+                        .Dispose();
+
+                    return newPath;
                 }
-            }
-            return "";
+                catch (Exception e)
+                {
+                    using (var writer = new StreamWriter(Options.PathOptions.Templog, true))
+                    {
+                        writer.WriteLine(e.Message);
+                        writer.Flush();
+                    }
+                }
+
+                return "";
+            });
         }
     }
 }

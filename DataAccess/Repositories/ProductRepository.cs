@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Threading.Tasks;
 using DataAccess;
 using DataAccess.Loggers;
 using Models;
@@ -18,46 +19,51 @@ namespace DataAccessLayer.Repositories
         public void Create(Product item) => throw new NotImplementedException();
         public void Delete(int id) => throw new NotImplementedException();
 
-        public Product Get(int id)
+        public async Task<Product> Get(int id)
         {
-            using (var connection = new SqlConnection(ConnectionString))
+            return await Task.Run(() =>
             {
-                connection.Open();
-                SqlTransaction transaction = connection.BeginTransaction();
-                var command = new SqlCommand("GetProductByID", connection)
+                using (var connection = new SqlConnection(ConnectionString))
                 {
-                    CommandType = CommandType.StoredProcedure
-                };
-                command.Transaction = transaction;
-
-                try
-                {
-                    command.Parameters.Add(new SqlParameter("@ID", id));
-                    var reader = command.ExecuteReader();
-                    if (reader.HasRows)
+                    connection.Open();
+                    SqlTransaction transaction = connection.BeginTransaction();
+                    var command = new SqlCommand("GetProductByID", connection)
                     {
-                        while (reader.Read())
+                        CommandType = CommandType.StoredProcedure
+                    };
+                    command.Transaction = transaction;
+
+                    try
+                    {
+                        command.Parameters.Add(new SqlParameter("@ID", id));
+                        var reader = command.ExecuteReader();
+                        if (reader.HasRows)
                         {
-                            var product = new Product
+                            while (reader.Read())
                             {
-                                Id = id,
-                                Name = reader.GetString(1),
-                            };
-                            return product;
+                                var product = new Product
+                                {
+                                    Id = id,
+                                    Name = reader.GetString(1),
+                                };
+                                return product;
+                            }
                         }
+
+                        transaction.Commit();
                     }
-                    transaction.Commit();
+                    catch (Exception e)
+                    {
+                        transaction.Rollback();
+                        ILogger logger = new Logger();
+                        logger.WriteErrorToDB(e.Message);
+                    }
                 }
-                catch (Exception e)
-                {
-                    transaction.Rollback();
-                    ILogger logger = new Logger();
-                    logger.WriteErrorToDB(e.Message);
-                }
-            }
-            throw new KeyNotFoundException();
+
+                throw new KeyNotFoundException();
+            });
         }
-        public IEnumerable<Product> GetAll() => throw new NotImplementedException();
         public void Update(Product item) => throw new NotImplementedException();
+        Task<IEnumerable<Product>> IRepository<Product>.GetAll() => throw new NotImplementedException();
     }
 }

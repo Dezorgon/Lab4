@@ -9,6 +9,6 @@ namespace ServiceLayer.Services
 {
     public interface IOrderService
     {
-        IEnumerable<OrderInfo> GetOrdersInfo();
+        Task<IEnumerable<OrderInfo>> GetOrdersInfo();
     }
 }

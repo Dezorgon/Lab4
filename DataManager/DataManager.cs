@@ -41,11 +41,14 @@ namespace DataManager
 
         protected override void OnStart(string[] args)
         {
-            var repositories = new UnitOfWork();
-            OrderService orderService = new OrderService(repositories);
-            var ordersInfo = orderService.GetOrdersInfo();
-            IXmlGeneratorService<OrderInfo> xmlGenerator = new XmlGeneratorService<OrderInfo>();
-            xmlGenerator.GenerateXml(OptionsLib.PathOptions.SourceDirectory, ordersInfo);
+            ThreadPool.QueueUserWorkItem(async state =>
+            {
+                var repositories = new UnitOfWork();
+                OrderService orderService = new OrderService(repositories);
+                var ordersInfo = await orderService.GetOrdersInfo();
+                IXmlGeneratorService<OrderInfo> xmlGenerator = new XmlGeneratorService<OrderInfo>();
+                await xmlGenerator.GenerateXml(OptionsLib.PathOptions.SourceDirectory, ordersInfo);
+            });
         }
 
         protected override void OnStop()

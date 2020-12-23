@@ -31,6 +31,8 @@ bd AdventureWorksLT2019
 
 ![Screenshot](Screenshots/Screenshot_6.png)
 
-Имеется БД и процедуры для хранения логов с такой таблицей:
+Имеются БД и процедуры для хранения логов с такой таблицей:
 
 ![Screenshot](Screenshots/Screenshot_7.png)
+
+
